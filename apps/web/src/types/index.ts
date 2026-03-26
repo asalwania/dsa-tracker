@@ -105,6 +105,7 @@ export interface LeaderboardEntry {
   avatar?: string;
   totalSolved: number;
   currentStreak: number;
+  longestStreak: number;
 }
 
 // =============================================================================

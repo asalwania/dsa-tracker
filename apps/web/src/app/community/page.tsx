@@ -1,11 +1,8 @@
-import Link from 'next/link';
-import { cn } from '@/lib/cn';
+'use client';
 
-const navTabs = [
-  { label: 'Curriculum', href: '/' },
-  { label: 'Mock Tests', href: '/mock-tests' },
-  { label: 'Community', href: '/community' },
-];
+import Link from 'next/link';
+import { TopNav } from '@/components/TopNav';
+import { cn } from '@/lib/cn';
 
 const upcomingRooms = [
   {
@@ -50,29 +47,8 @@ const futureModules = [
 export default function CommunityPage(): React.ReactElement {
   return (
     <div className="min-h-screen bg-surface text-on-surface">
-      <nav className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-outline-variant bg-surface-container-low/90 px-4 backdrop-blur-md md:px-6">
-        <Link href="/" className="font-headline text-lg font-extrabold tracking-tight md:text-xl">
-          DSA Architect
-        </Link>
-        <div className="flex items-center gap-5">
-          {navTabs.map((tab) => (
-            <Link
-              key={tab.label}
-              href={tab.href}
-              className={cn(
-                'hidden py-5 text-sm font-bold tracking-tight transition-colors md:block',
-                tab.href === '/community'
-                  ? 'border-b-2 border-primary text-primary'
-                  : 'text-on-surface-variant hover:text-primary',
-              )}
-            >
-              {tab.label}
-            </Link>
-          ))}
-        </div>
-      </nav>
-
-      <main className="mx-auto max-w-6xl px-4 py-8 md:px-8 md:py-12">
+      <TopNav activeHref="/community" />
+      <main className="mx-auto max-w-6xl px-4 py-8 pt-24 md:px-8 md:py-12 md:pt-28">
         <section className="relative overflow-hidden rounded-3xl border border-outline-variant bg-gradient-to-br from-secondary-container/30 via-surface-container-low to-primary-container/30 p-8 md:p-12">
           <div className="absolute -left-8 top-0 h-48 w-48 rounded-full bg-secondary/20 blur-3xl" />
           <div className="absolute bottom-0 right-0 h-56 w-56 rounded-full bg-primary/20 blur-3xl" />

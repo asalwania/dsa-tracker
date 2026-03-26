@@ -1,9 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { TopNav } from '@/components/TopNav';
 import { api } from '@/lib/axios';
 import { cn } from '@/lib/cn';
 import type { ApiResponse, Problem, Topic, UserProgress } from '@/types';
@@ -57,13 +57,6 @@ interface TopicSectionData {
 type RawTopic = Omit<Topic, 'id'> & { id?: string; _id?: string };
 type RawProblem = Omit<Problem, 'id'> & { id?: string; _id?: string };
 type RawProgress = Omit<UserProgress, 'id'> & { id?: string; _id?: string };
-type Theme = 'light' | 'dark';
-
-const topTabs = [
-  { label: 'Curriculum', href: '/' },
-  { label: 'Mock Tests', href: '/mock-tests' },
-  { label: 'Community', href: '/community' },
-];
 
 const fallbackSidebarItems: SidebarItem[] = [
   { id: 'fallback-1', label: 'Arrays', icon: 'arrays', active: true },
@@ -532,7 +525,6 @@ export default function HomePage(): React.ReactElement {
   const router = useRouter();
   const { user, isLoading, isAuthenticated, logout } = useAuth();
 
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDashboardLoading, setIsDashboardLoading] = useState(true);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
   const [topicSections, setTopicSections] = useState<TopicSectionData[]>([]);
@@ -541,60 +533,6 @@ export default function HomePage(): React.ReactElement {
   const [expandedTopicId, setExpandedTopicId] = useState<string | null>(null);
   const [pendingScrollTopicId, setPendingScrollTopicId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [theme, setTheme] = useState<Theme>('light');
-  const profileMenuRef = useRef<HTMLDivElement | null>(null);
-
-  const userInitial = useMemo(() => {
-    const firstCharacter = user?.name?.trim().charAt(0);
-    return firstCharacter ? firstCharacter.toUpperCase() : 'U';
-  }, [user?.name]);
-
-  useEffect(() => {
-    if (!isProfileMenuOpen) {
-      return;
-    }
-
-    const handleClickOutside = (event: MouseEvent): void => {
-      const targetNode = event.target as Node;
-      if (profileMenuRef.current && !profileMenuRef.current.contains(targetNode)) {
-        setIsProfileMenuOpen(false);
-      }
-    };
-
-    const handleEscape = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') {
-        setIsProfileMenuOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEscape);
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [isProfileMenuOpen]);
-
-  useEffect(() => {
-    const storedTheme = window.localStorage.getItem('theme');
-    if (storedTheme === 'light' || storedTheme === 'dark') {
-      setTheme(storedTheme);
-      document.documentElement.dataset.theme = storedTheme;
-      return;
-    }
-
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const initialTheme: Theme = systemPrefersDark ? 'dark' : 'light';
-    setTheme(initialTheme);
-    document.documentElement.dataset.theme = initialTheme;
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    window.localStorage.setItem('theme', theme);
-  }, [theme]);
 
   const loadDashboardData = useCallback(async (): Promise<void> => {
     if (!isAuthenticated) {
@@ -679,15 +617,6 @@ export default function HomePage(): React.ReactElement {
 
     void loadDashboardData();
   }, [isLoading, isAuthenticated, loadDashboardData]);
-
-  const handleLogout = async (): Promise<void> => {
-    if (isLoggingOut) return;
-    setIsProfileMenuOpen(false);
-    setIsLoggingOut(true);
-    await logout();
-    router.replace('/login');
-    router.refresh();
-  };
 
   const allProblems = useMemo(() => {
     return topicSections.flatMap((section) => section.problems);
@@ -927,131 +856,12 @@ export default function HomePage(): React.ReactElement {
 
   return (
     <div className="font-body min-h-screen bg-surface text-on-surface selection:bg-primary-fixed-dim">
-      <nav className="fixed inset-x-0 top-0 z-50 flex h-16 items-center justify-between bg-surface-container-low/85 px-4 shadow-[0_20px_40px_rgba(99,102,241,0.06)] backdrop-blur-md md:px-6">
-        <div className="flex items-center gap-4 md:gap-8">
-          <span className="font-headline text-lg font-extrabold tracking-tight text-on-surface md:text-xl">
-            DSA Architect
-          </span>
-          <div className="hidden items-center gap-6 md:flex">
-            {topTabs.map((tab) => (
-              <Link
-                key={tab.label}
-                href={tab.href}
-                className={cn(
-                  'py-5 font-headline text-sm font-bold tracking-tight transition-colors',
-                  tab.href === '/'
-                    ? 'border-b-2 border-primary text-primary'
-                    : 'text-on-surface-variant hover:text-primary',
-                )}
-              >
-                {tab.label}
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 md:gap-3">
-          <div className="hidden items-center gap-2 rounded-full bg-surface-container-low px-3 py-1.5 md:flex">
-            <Icon name="search" className="h-4 w-4 text-outline" />
-            <input
-              type="text"
-              className="w-32 border-none bg-transparent text-sm text-on-surface outline-none placeholder:text-outline lg:w-48"
-              placeholder="Search problems..."
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-            />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))}
-            className="rounded-full p-2 text-on-surface-variant transition-colors hover:text-primary active:scale-95"
-            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-            title={theme === 'dark' ? 'Light theme' : 'Dark theme'}
-          >
-            <Icon name={theme === 'dark' ? 'sun' : 'moon'} className="h-5 w-5" />
-          </button>
-
-          <div ref={profileMenuRef} className="relative">
-            <button
-              type="button"
-              onClick={() => setIsProfileMenuOpen((current) => !current)}
-              className="flex items-center gap-2 rounded-full border border-outline-variant bg-surface-container-lowest px-1 py-1 pr-2 transition-all hover:border-primary"
-              aria-expanded={isProfileMenuOpen}
-              aria-haspopup="menu"
-              aria-label="Open profile menu"
-            >
-              {user?.avatar ? (
-                <img
-                  src={user.avatar}
-                  alt={user.name ? `${user.name} avatar` : 'User avatar'}
-                  className="h-8 w-8 rounded-full border border-outline-variant object-cover"
-                />
-              ) : (
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-outline-variant bg-primary-fixed text-xs font-bold text-on-primary-fixed">
-                  {userInitial}
-                </div>
-              )}
-              <Icon
-                name="chevron"
-                className={cn(
-                  'h-4 w-4 text-on-surface-variant transition-transform',
-                  isProfileMenuOpen && 'rotate-180',
-                )}
-              />
-            </button>
-
-            {isProfileMenuOpen && (
-              <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-72 overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-lowest shadow-[0_20px_45px_rgba(15,23,42,0.16)]">
-                <div className="p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-on-surface-variant">
-                    Profile
-                  </p>
-                  <div className="mt-3 flex items-center gap-3">
-                    {user?.avatar ? (
-                      <img
-                        src={user.avatar}
-                        alt={user.name ? `${user.name} avatar` : 'User avatar'}
-                        className="h-12 w-12 rounded-full border border-outline-variant object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full border border-outline-variant bg-primary-fixed text-sm font-bold text-on-primary-fixed">
-                        {userInitial}
-                      </div>
-                    )}
-
-                    <div className="min-w-0">
-                      <p className="truncate font-headline text-sm font-bold text-on-surface">
-                        {user?.name ?? 'User'}
-                      </p>
-                      <p className="truncate text-xs text-on-surface-variant">
-                        {user?.email ?? 'No email found'}
-                      </p>
-                      <p className="mt-1 inline-flex rounded-full bg-surface-container-high px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-on-surface">
-                        {user?.role ?? 'user'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-t border-outline-variant p-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void handleLogout();
-                    }}
-                    disabled={isLoggingOut}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-outline-variant bg-surface-container-low px-3 py-2 text-sm font-bold text-on-surface transition-all hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    <Icon name="logout" className="h-4 w-4" />
-                    {isLoggingOut ? 'Logging out...' : 'Logout'}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </nav>
+      <TopNav
+        activeHref="/"
+        showSearch
+        searchTerm={searchTerm}
+        onSearch={setSearchTerm}
+      />
 
       <div className="flex min-h-screen pt-16">
         <aside className="fixed left-0 top-16 hidden h-[calc(100vh-64px)] w-64 flex-col space-y-2 bg-surface-container py-8 pl-4 lg:flex">
@@ -1137,13 +947,10 @@ export default function HomePage(): React.ReactElement {
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  void handleLogout();
-                }}
-                disabled={isLoggingOut}
+                onClick={() => { void logout().then(() => { router.replace('/login'); router.refresh(); }); }}
                 className="rounded-full border border-outline-variant bg-white px-3 py-1.5 text-xs font-bold text-on-surface"
               >
-                {isLoggingOut ? 'Logging...' : 'Logout'}
+                Logout
               </button>
             </div>
             <button

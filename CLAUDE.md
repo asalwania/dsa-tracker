@@ -35,6 +35,7 @@ pnpm prettier --write .
 ### Database
 ```bash
 make seed         # Seed MongoDB with topics and problems
+pnpm seed         # Alias: runs seed script directly via tsx
 ```
 
 MongoDB **requires a replica set** (`rs0`) — the `mongo-init` Docker service handles initialization. Transactions won't work without it.
@@ -47,7 +48,7 @@ Copy `.env.example` files in both apps before running:
 
 ## API Architecture (`apps/api`)
 
-**Module pattern**: each feature under `src/modules/<feature>/` has `model.ts`, `service.ts`, `controller.ts`, `routes.ts`, `types.ts`.
+**Modules**: `auth`, `users`, `topics`, `problems`, `progress`, `streaks`, `leaderboard` — each under `src/modules/<feature>/` with `model.ts`, `service.ts`, `controller.ts`, `routes.ts`, `types.ts`.
 
 **Request lifecycle**: `helmet → CORS → rate-limit → body/cookie parse → route → validate middleware → controller → service → response util`
 

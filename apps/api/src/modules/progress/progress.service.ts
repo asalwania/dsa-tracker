@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { AppError } from '../../utils/AppError.js';
 import { Problem } from '../problems/problems.model.js';
+import { streaksService } from '../streaks/streaks.service.js';
 import { Progress, type IProgress, type ProgressStatus } from './progress.model.js';
 import type { ToggleProgressInput } from './progress.types.js';
 
@@ -80,6 +81,10 @@ export const progressService = {
 
     if (!progress) {
       throw AppError.internal('Failed to update progress', 'PROGRESS_UPDATE_FAILED');
+    }
+
+    if (isCompleted) {
+      await streaksService.updateStreak(userId);
     }
 
     return progress;

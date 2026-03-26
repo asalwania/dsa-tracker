@@ -1,11 +1,8 @@
-import Link from 'next/link';
-import { cn } from '@/lib/cn';
+'use client';
 
-const navTabs = [
-  { label: 'Curriculum', href: '/' },
-  { label: 'Mock Tests', href: '/mock-tests' },
-  { label: 'Community', href: '/community' },
-];
+import Link from 'next/link';
+import { TopNav } from '@/components/TopNav';
+import { cn } from '@/lib/cn';
 
 const upcomingSeries = [
   {
@@ -41,29 +38,9 @@ const plannedFeatures = [
 export default function MockTestsPage(): React.ReactElement {
   return (
     <div className="min-h-screen bg-surface text-on-surface">
-      <nav className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-outline-variant bg-surface-container-low/90 px-4 backdrop-blur-md md:px-6">
-        <Link href="/" className="font-headline text-lg font-extrabold tracking-tight md:text-xl">
-          DSA Architect
-        </Link>
-        <div className="flex items-center gap-5">
-          {navTabs.map((tab) => (
-            <Link
-              key={tab.label}
-              href={tab.href}
-              className={cn(
-                'hidden py-5 text-sm font-bold tracking-tight transition-colors md:block',
-                tab.href === '/mock-tests'
-                  ? 'border-b-2 border-primary text-primary'
-                  : 'text-on-surface-variant hover:text-primary',
-              )}
-            >
-              {tab.label}
-            </Link>
-          ))}
-        </div>
-      </nav>
+      <TopNav activeHref="/mock-tests" />
 
-      <main className="mx-auto max-w-6xl px-4 py-8 md:px-8 md:py-12">
+      <main className="mx-auto max-w-6xl px-4 pt-24 pb-8 md:px-8 md:pt-28 md:pb-12">
         <section className="relative overflow-hidden rounded-3xl border border-outline-variant bg-gradient-to-br from-primary-container/30 via-surface-container-low to-secondary-container/30 p-8 md:p-12">
           <div className="absolute -right-12 -top-12 h-56 w-56 rounded-full bg-primary/20 blur-3xl" />
           <div className="absolute -bottom-14 left-10 h-44 w-44 rounded-full bg-secondary/25 blur-3xl" />
