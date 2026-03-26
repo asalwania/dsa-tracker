@@ -69,26 +69,57 @@ services:
         condition: service_healthy
     env_file:
       - apps/api/.env
+    environment:
+      - NODE_ENV=production
     networks:
       - dsa-network
     restart: always
     expose:
       - '5000'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:5000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   web:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000/api}
     container_name: dsa-tracker-web
     depends_on:
       - api
     env_file:
       - apps/web/.env
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
     networks:
       - dsa-network
     restart: always
     expose:
       - '3000'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 45s
 
 volumes:
   mongo_data:

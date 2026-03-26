@@ -1,0 +1,254 @@
+name: Deploy Production
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+      ECR_REPOSITORY_API: dsa-tracker-api
+      ECR_REPOSITORY_WEB: dsa-tracker-web
+      ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+      ECS_SERVICE_API: ${{ vars.ECS_SERVICE_API }}
+      ECS_SERVICE_WEB: ${{ vars.ECS_SERVICE_WEB }}
+      ECS_TASK_EXECUTION_ROLE_ARN: ${{ vars.ECS_TASK_EXECUTION_ROLE_ARN }}
+      ECS_TASK_ROLE_ARN: ${{ vars.ECS_TASK_ROLE_ARN }}
+      ALB_DNS_NAME: ${{ vars.ALB_DNS_NAME }}
+      API_SECRETS_NAME: ${{ vars.API_SECRETS_NAME }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build monorepo
+        run: pnpm turbo build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Validate deploy variables
+        shell: bash
+        run: |
+          required_vars=(
+            AWS_REGION
+            ECR_REGISTRY
+            ECS_CLUSTER
+            ECS_SERVICE_API
+            ECS_SERVICE_WEB
+            ECS_TASK_EXECUTION_ROLE_ARN
+            ECS_TASK_ROLE_ARN
+            ALB_DNS_NAME
+          )
+
+          for var_name in "${required_vars[@]}"; do
+            if [ -z "${!var_name}" ]; then
+              echo "::error::Missing required variable: ${var_name}"
+              exit 1
+            fi
+          done
+
+      - name: Build and push Docker images
+        shell: bash
+        env:
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+        run: |
+          IMAGE_TAG="${GITHUB_SHA::7}"
+          API_IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY_API}:${IMAGE_TAG}"
+          WEB_IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY_WEB}:${IMAGE_TAG}"
+          WEB_API_URL="${NEXT_PUBLIC_API_URL:-https://${ALB_DNS_NAME}/api}"
+
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> "$GITHUB_ENV"
+          echo "API_IMAGE=${API_IMAGE}" >> "$GITHUB_ENV"
+          echo "WEB_IMAGE=${WEB_IMAGE}" >> "$GITHUB_ENV"
+          echo "WEB_API_URL=${WEB_API_URL}" >> "$GITHUB_ENV"
+
+          docker build -f apps/api/Dockerfile -t "${API_IMAGE}" .
+          docker push "${API_IMAGE}"
+
+          docker build \
+            -f apps/web/Dockerfile \
+            --build-arg NEXT_PUBLIC_API_URL="${WEB_API_URL}" \
+            -t "${WEB_IMAGE}" \
+            .
+          docker push "${WEB_IMAGE}"
+
+      - name: Sync API env secret in AWS Secrets Manager
+        shell: bash
+        env:
+          NODE_ENV: production
+          PORT: '5000'
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          JWT_ACCESS_SECRET: ${{ secrets.JWT_ACCESS_SECRET }}
+          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+          JWT_ACCESS_EXPIRES_IN: 15m
+          JWT_REFRESH_EXPIRES_IN: 30d
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_CALLBACK_URL: ${{ vars.GOOGLE_CALLBACK_URL }}
+          GITHUB_CLIENT_ID: ${{ vars.GITHUB_CLIENT_ID }}
+          GITHUB_CLIENT_SECRET: ${{ secrets.GITHUB_CLIENT_SECRET }}
+          GITHUB_CALLBACK_URL: ${{ vars.GITHUB_CALLBACK_URL }}
+          CLIENT_URL: ${{ vars.CLIENT_URL }}
+          COOKIE_DOMAIN: ${{ vars.COOKIE_DOMAIN }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_S3_BUCKET: ${{ vars.AWS_S3_BUCKET }}
+          AWS_SQS_QUEUE_URL: ${{ vars.AWS_SQS_QUEUE_URL }}
+        run: |
+          SECRET_NAME="${API_SECRETS_NAME:-dsa-tracker/prod/api}"
+          GOOGLE_CALLBACK="${GOOGLE_CALLBACK_URL:-https://${ALB_DNS_NAME}/api/auth/google/callback}"
+          GITHUB_CALLBACK="${GITHUB_CALLBACK_URL:-https://${ALB_DNS_NAME}/api/auth/github/callback}"
+          FRONTEND_URL="${CLIENT_URL:-https://${ALB_DNS_NAME}}"
+          COOKIE_DOMAIN_VALUE="${COOKIE_DOMAIN:-${ALB_DNS_NAME}}"
+
+          SECRET_PAYLOAD="$(jq -n \
+            --arg NODE_ENV "$NODE_ENV" \
+            --arg PORT "$PORT" \
+            --arg MONGODB_URI "$MONGODB_URI" \
+            --arg REDIS_URL "$REDIS_URL" \
+            --arg JWT_ACCESS_SECRET "$JWT_ACCESS_SECRET" \
+            --arg JWT_REFRESH_SECRET "$JWT_REFRESH_SECRET" \
+            --arg JWT_ACCESS_EXPIRES_IN "$JWT_ACCESS_EXPIRES_IN" \
+            --arg JWT_REFRESH_EXPIRES_IN "$JWT_REFRESH_EXPIRES_IN" \
+            --arg GOOGLE_CLIENT_ID "$GOOGLE_CLIENT_ID" \
+            --arg GOOGLE_CLIENT_SECRET "$GOOGLE_CLIENT_SECRET" \
+            --arg GOOGLE_CALLBACK_URL "$GOOGLE_CALLBACK" \
+            --arg GITHUB_CLIENT_ID "$GITHUB_CLIENT_ID" \
+            --arg GITHUB_CLIENT_SECRET "$GITHUB_CLIENT_SECRET" \
+            --arg GITHUB_CALLBACK_URL "$GITHUB_CALLBACK" \
+            --arg CLIENT_URL "$FRONTEND_URL" \
+            --arg COOKIE_DOMAIN "$COOKIE_DOMAIN_VALUE" \
+            --arg AWS_REGION "$AWS_REGION" \
+            --arg AWS_ACCESS_KEY_ID "$AWS_ACCESS_KEY_ID" \
+            --arg AWS_SECRET_ACCESS_KEY "$AWS_SECRET_ACCESS_KEY" \
+            --arg AWS_S3_BUCKET "$AWS_S3_BUCKET" \
+            --arg AWS_SQS_QUEUE_URL "$AWS_SQS_QUEUE_URL" \
+            '{
+              NODE_ENV: $NODE_ENV,
+              PORT: $PORT,
+              MONGODB_URI: $MONGODB_URI,
+              REDIS_URL: $REDIS_URL,
+              JWT_ACCESS_SECRET: $JWT_ACCESS_SECRET,
+              JWT_REFRESH_SECRET: $JWT_REFRESH_SECRET,
+              JWT_ACCESS_EXPIRES_IN: $JWT_ACCESS_EXPIRES_IN,
+              JWT_REFRESH_EXPIRES_IN: $JWT_REFRESH_EXPIRES_IN,
+              GOOGLE_CLIENT_ID: $GOOGLE_CLIENT_ID,
+              GOOGLE_CLIENT_SECRET: $GOOGLE_CLIENT_SECRET,
+              GOOGLE_CALLBACK_URL: $GOOGLE_CALLBACK_URL,
+              GITHUB_CLIENT_ID: $GITHUB_CLIENT_ID,
+              GITHUB_CLIENT_SECRET: $GITHUB_CLIENT_SECRET,
+              GITHUB_CALLBACK_URL: $GITHUB_CALLBACK_URL,
+              CLIENT_URL: $CLIENT_URL,
+              COOKIE_DOMAIN: $COOKIE_DOMAIN,
+              AWS_REGION: $AWS_REGION,
+              AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID,
+              AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY,
+              AWS_S3_BUCKET: $AWS_S3_BUCKET,
+              AWS_SQS_QUEUE_URL: $AWS_SQS_QUEUE_URL
+            }')"
+
+          if aws secretsmanager describe-secret --secret-id "$SECRET_NAME" >/dev/null 2>&1; then
+            aws secretsmanager put-secret-value \
+              --secret-id "$SECRET_NAME" \
+              --secret-string "$SECRET_PAYLOAD" \
+              >/dev/null
+          else
+            aws secretsmanager create-secret \
+              --name "$SECRET_NAME" \
+              --secret-string "$SECRET_PAYLOAD" \
+              >/dev/null
+          fi
+
+          API_SECRETS_ARN="$(aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --query 'ARN' --output text)"
+          echo "API_SECRETS_ARN=${API_SECRETS_ARN}" >> "$GITHUB_ENV"
+
+      - name: Prepare task definition files
+        shell: bash
+        run: |
+          API_TASK_DEF="/tmp/ecs-task-api.json"
+          WEB_TASK_DEF="/tmp/ecs-task-web.json"
+
+          cp infra/ecs-task-api.json "$API_TASK_DEF"
+          cp infra/ecs-task-web.json "$WEB_TASK_DEF"
+
+          sed -i "s|<ECS_TASK_EXECUTION_ROLE_ARN>|${ECS_TASK_EXECUTION_ROLE_ARN}|g" "$API_TASK_DEF"
+          sed -i "s|<ECS_TASK_ROLE_ARN>|${ECS_TASK_ROLE_ARN}|g" "$API_TASK_DEF"
+          sed -i "s|<AWS_REGION>|${AWS_REGION}|g" "$API_TASK_DEF"
+          sed -i "s|<API_SECRETS_ARN>|${API_SECRETS_ARN}|g" "$API_TASK_DEF"
+
+          sed -i "s|<ECS_TASK_EXECUTION_ROLE_ARN>|${ECS_TASK_EXECUTION_ROLE_ARN}|g" "$WEB_TASK_DEF"
+          sed -i "s|<ECS_TASK_ROLE_ARN>|${ECS_TASK_ROLE_ARN}|g" "$WEB_TASK_DEF"
+          sed -i "s|<AWS_REGION>|${AWS_REGION}|g" "$WEB_TASK_DEF"
+          sed -i "s|<ALB_DNS_NAME>|${ALB_DNS_NAME}|g" "$WEB_TASK_DEF"
+
+          echo "API_TASK_DEF=${API_TASK_DEF}" >> "$GITHUB_ENV"
+          echo "WEB_TASK_DEF=${WEB_TASK_DEF}" >> "$GITHUB_ENV"
+
+      - name: Render API task definition
+        id: render-api-task
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ env.API_TASK_DEF }}
+          container-name: dsa-api
+          image: ${{ env.API_IMAGE }}
+
+      - name: Deploy API service
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-api-task.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE_API }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      - name: Render Web task definition
+        id: render-web-task
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ env.WEB_TASK_DEF }}
+          container-name: dsa-web
+          image: ${{ env.WEB_IMAGE }}
+
+      - name: Deploy Web service
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-web-task.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE_WEB }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
