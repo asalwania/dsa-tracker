@@ -1,0 +1,28 @@
+{
+  "name": "dsa-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A full-stack DSA Sheet Tracker application for tracking your Data Structures & Algorithms progress",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "format": "prettier --write .",
+    "clean": "turbo clean",
+    "db:up": "docker compose up -d mongo redis mongo-init",
+    "db:down": "docker compose down",
+    "seed": "pnpm --filter @dsa-tracker/api seed"
+  },
+  "devDependencies": {
+    "turbo": "^2.1.0",
+    "prettier": "^3.3.3",
+    "eslint": "^9.12.0",
+    "@typescript-eslint/eslint-plugin": "^8.8.0",
+    "@typescript-eslint/parser": "^8.8.0"
+  },
+  "packageManager": "pnpm@9.12.0"
+}

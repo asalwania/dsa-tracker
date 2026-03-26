@@ -1,0 +1,68 @@
+version: '3.9'
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: dsa-tracker-mongo
+    command: ['--replSet', 'rs0', '--bind_ip_all']
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - dsa-network
+    healthcheck:
+      test: >
+        mongosh --eval "db.adminCommand('ping')"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  mongo-init:
+    image: mongo:7
+    container_name: dsa-tracker-mongo-init
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - dsa-network
+    command: >
+      mongosh --host mongo --eval "
+        try {
+          rs.status();
+          print('Replica set already initialized');
+        } catch (e) {
+          rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongo:27017' }] });
+          print('Replica set initiated');
+        }
+      "
+    restart: 'no'
+
+  redis:
+    image: redis:7-alpine
+    container_name: dsa-tracker-redis
+    command: >
+      redis-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - dsa-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mongo_data:
+  redis_data:
+
+networks:
+  dsa-network:
+    driver: bridge
