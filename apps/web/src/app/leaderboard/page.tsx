@@ -76,6 +76,7 @@ export default function LeaderboardPage(): React.ReactElement {
 
   const top3 = entries.slice(0, 3);
   const rest = entries.slice(3);
+  const tableEntries = rest.length > 0 ? rest : entries;
 
   // Podium order: 2nd, 1st, 3rd
   const podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean) as LeaderboardEntry[];
@@ -164,7 +165,7 @@ export default function LeaderboardPage(): React.ReactElement {
               <tbody>
                 {isLoading
                   ? Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)
-                  : rest.map((entry, idx) => {
+                  : tableEntries.map((entry, idx) => {
                       const isMe = user?.id === entry.userId;
                       return (
                         <tr

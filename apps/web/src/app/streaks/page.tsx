@@ -11,7 +11,15 @@ const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'S
 const DAY_LABELS = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
 
 function toYMD(date: Date): string {
-  return date.toISOString().slice(0, 10);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function toDate(value: string): Date | null {
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 function buildCalendarDays(): Date[] {
@@ -68,8 +76,12 @@ export default function StreaksPage(): React.ReactElement {
     if (!progressData) return {};
     const map: Record<string, number> = {};
     for (const p of progressData) {
-      if (p.completed && p.completedAt) {
-        const day = p.completedAt.slice(0, 10);
+      if (p.completed) {
+        const timestamp = p.completedAt ?? p.updatedAt ?? p.createdAt;
+        if (!timestamp) continue;
+        const date = toDate(timestamp);
+        if (!date) continue;
+        const day = toYMD(date);
         map[day] = (map[day] ?? 0) + 1;
       }
     }

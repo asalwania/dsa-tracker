@@ -81,6 +81,8 @@ export interface UserProgress {
   status: ProgressStatus;
   notes?: string;
   completedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // =============================================================================

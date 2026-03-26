@@ -10,8 +10,8 @@ const NAV_TABS = [
   { label: 'Curriculum', href: '/' },
   { label: 'Streaks', href: '/streaks' },
   { label: 'Leaderboard', href: '/leaderboard' },
-  { label: 'Mock Tests', href: '/mock-tests' },
-  { label: 'Community', href: '/community' },
+  { label: 'Mock Tests', href: '/mock-tests', comingSoon: true },
+  { label: 'Community', href: '/community', comingSoon: true },
 ];
 
 type Theme = 'light' | 'dark';
@@ -142,18 +142,24 @@ export function TopNav({ activeHref, showSearch = false, searchTerm = '', onSear
         </Link>
         <div className="hidden items-center gap-6 md:flex">
           {NAV_TABS.map((tab) => (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className={cn(
-                'py-5 font-headline text-sm font-bold tracking-tight transition-colors',
-                tab.href === activeHref
-                  ? 'border-b-2 border-primary text-primary'
-                  : 'text-on-surface-variant hover:text-primary',
+            <div key={tab.href} className="relative">
+              <Link
+                href={tab.href}
+                className={cn(
+                  'py-5 font-headline text-sm font-bold tracking-tight transition-colors',
+                  tab.href === activeHref
+                    ? 'border-b-2 border-primary text-primary'
+                    : 'text-on-surface-variant hover:text-primary',
+                )}
+              >
+                {tab.label}
+              </Link>
+              {tab.comingSoon && (
+                <span className="absolute -right-5 -top-2.5 rounded-full bg-amber-400/90 px-1.5 py-px text-[9px] font-extrabold uppercase tracking-wide text-amber-900 shadow-sm">
+                  Soon
+                </span>
               )}
-            >
-              {tab.label}
-            </Link>
+            </div>
           ))}
         </div>
       </div>
