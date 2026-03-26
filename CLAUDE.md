@@ -41,6 +41,15 @@ pnpm seed         # Alias: runs seed script directly via tsx
 
 MongoDB **requires a replica set** (`rs0`) — the `mongo-init` Docker service handles initialization. Transactions won't work without it.
 
+### Testing
+```bash
+pnpm --filter @dsa-tracker/api test        # Run all API integration tests
+pnpm --filter @dsa-tracker/api test:watch   # Watch mode
+npx vitest run src/modules/auth             # Run a single test suite (from apps/api/)
+```
+
+Tests use **mongodb-memory-server** (in-memory MongoDB) and a **Map-based Redis mock** (`src/__tests__/setup.ts`). Environment variables for tests are set in `vitest.config.ts` — no `.env` file needed. Tests run sequentially (`fileParallelism: false`) to avoid mongodb-memory-server lock conflicts. Helpers in `src/__tests__/helpers.ts` provide `createTestUser()` and `seedTopicAndProblems()`.
+
 ## Environment Setup
 
 Copy `.env.example` files in both apps before running:
