@@ -4,18 +4,42 @@ import { env } from '../config/env.js';
 /** 30 days in milliseconds */
 const REFRESH_TOKEN_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
 
+function isIpAddress(value: string): boolean {
+  const v = value.trim();
+  return (
+    /^(?:\d{1,3}\.){3}\d{1,3}$/.test(v) ||
+    (v.startsWith('[') && v.endsWith(']')) ||
+    v.includes(':')
+  );
+}
+
+function isHttpsClientUrl(url: string): boolean {
+  try {
+    return new URL(url).protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 /** Domain attribute is invalid on localhost and can cause cookies to be dropped. */
 function shouldSetCookieDomain(domain: string): boolean {
   const normalized = domain.trim().toLowerCase();
-  return normalized.length > 0 && normalized !== 'localhost' && normalized !== '127.0.0.1';
+  return (
+    normalized.length > 0 &&
+    normalized !== 'localhost' &&
+    normalized !== '127.0.0.1' &&
+    !isIpAddress(normalized)
+  );
 }
 
 /** Shared cookie options for the refresh token */
 function getCookieOptions(path: string): CookieOptions {
+  const secureCookies = env.NODE_ENV === 'production' && isHttpsClientUrl(env.CLIENT_URL);
   const options: CookieOptions = {
     httpOnly: true,
-    secure: env.NODE_ENV !== 'development',
-    sameSite: 'strict' as const,
+    secure: secureCookies,
+    // Cross-site cookies require SameSite=None + Secure (HTTPS only).
+    sameSite: secureCookies ? ('none' as const) : ('lax' as const),
     path,
     maxAge: REFRESH_TOKEN_MAX_AGE,
   };
