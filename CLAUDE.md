@@ -25,11 +25,12 @@ pnpm --filter @dsa-tracker/api dev
 pnpm --filter @dsa-tracker/web dev
 ```
 
-### Build / Lint / Format
+### Build / Lint / Format / Clean
 ```bash
 pnpm turbo build
 pnpm turbo lint
 pnpm prettier --write .
+make clean        # Remove all build artifacts + node_modules
 ```
 
 ### Database
@@ -75,3 +76,12 @@ Key utilities:
 **Server state**: TanStack Query client at `src/lib/queryClient.ts` (5 min stale, 1 retry, no window-focus refetch).
 
 **Utilities**: `src/lib/cn.ts` — `cn()` merges Tailwind classes (clsx + tailwind-merge).
+
+## Ports
+
+- API: `http://localhost:5000` (Express)
+- Web: `http://localhost:3000` (Next.js)
+
+## Deployment
+
+Production runs on AWS: ECS (API + Web containers) behind ALB + CloudFront, with MongoDB Atlas and ElastiCache (Redis). See `docker-compose.prod.yml` and individual `Dockerfile`s in each app.
