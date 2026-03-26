@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { setAccessToken } from '@/lib/axios';
 
-export default function AuthCallbackPage() {
+function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { refreshToken } = useAuth();
@@ -36,5 +36,13 @@ export default function AuthCallbackPage() {
         <p className="text-on-surface-variant font-medium">Completing sign in...</p>
       </div>
     </div>
+  );
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-surface-container-lowest" />}>
+      <AuthCallbackContent />
+    </Suspense>
   );
 }

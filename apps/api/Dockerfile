@@ -1,5 +1,4 @@
-# Stage 1 — Builder
-FROM node:20-alpine AS builder
+FROM node:20-alpine
 
 RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
 
@@ -12,21 +11,14 @@ RUN pnpm install --frozen-lockfile --filter @dsa-tracker/api
 
 COPY apps/api/ apps/api/
 
-RUN pnpm --filter @dsa-tracker/api build
-
-# Stage 2 — Production
-FROM node:20-alpine AS production
-
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-WORKDIR /app
+WORKDIR /app/apps/api
 
-COPY --from=builder /app/apps/api/dist ./dist
-COPY --from=builder /app/apps/api/node_modules ./node_modules
-COPY --from=builder /app/apps/api/package.json ./
+ENV NODE_ENV=production
 
 EXPOSE 5000
 
 USER appuser
 
-CMD ["node", "dist/server.js"]
+CMD ["pnpm", "exec", "tsx", "src/server.ts"]

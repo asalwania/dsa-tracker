@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
@@ -12,7 +12,7 @@ import { isAxiosError } from 'axios';
 
 const API_URL = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:5000/api';
 
-export default function RegisterPage() {
+function RegisterContent() {
   const { register: registerUser } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -335,5 +335,13 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-surface-container-lowest" />}>
+      <RegisterContent />
+    </Suspense>
   );
 }
