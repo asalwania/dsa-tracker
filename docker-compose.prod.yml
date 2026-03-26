@@ -4,6 +4,7 @@ services:
   mongo:
     image: mongo:7
     container_name: dsa-tracker-mongo
+    profiles: ['local-db']
     command: ['--replSet', 'rs0', '--bind_ip_all']
     volumes:
       - mongo_data:/data/db
@@ -21,6 +22,7 @@ services:
   mongo-init:
     image: mongo:7
     container_name: dsa-tracker-mongo-init
+    profiles: ['local-db']
     depends_on:
       mongo:
         condition: service_healthy
@@ -63,19 +65,20 @@ services:
       dockerfile: apps/api/Dockerfile
     container_name: dsa-tracker-api
     depends_on:
-      mongo:
-        condition: service_healthy
       redis:
         condition: service_healthy
     env_file:
       - apps/api/.env
     environment:
       - NODE_ENV=production
+      - REDIS_URL=redis://redis:6379
     networks:
       - dsa-network
     restart: always
     expose:
       - '5000'
+    ports:
+      - '5000:5000'
     healthcheck:
       test:
         [
@@ -98,16 +101,17 @@ services:
     container_name: dsa-tracker-web
     depends_on:
       - api
-    env_file:
-      - apps/web/.env
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:5000/api}
     networks:
       - dsa-network
     restart: always
     expose:
       - '3000'
+    ports:
+      - '3000:3000'
     healthcheck:
       test:
         [
