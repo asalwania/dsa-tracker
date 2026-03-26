@@ -6,14 +6,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { loginSchema, type LoginFormValues } from '@/lib/validators';
+import { registerSchema, type RegisterFormValues } from '@/lib/validators';
 import { cn } from '@/lib/cn';
 import { isAxiosError } from 'axios';
 
 const API_URL = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:5000/api';
 
-export default function LoginPage() {
-  const { login } = useAuth();
+export default function RegisterPage() {
+  const { register: registerUser } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect');
@@ -23,23 +23,32 @@ export default function LoginPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
   });
 
-  const onSubmit = async (data: LoginFormValues) => {
+  const onSubmit = async (data: RegisterFormValues) => {
     setSubmitError(null);
     try {
-      await login(data.email, data.password);
+      await registerUser({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+      });
       router.push(redirect || '/');
     } catch (err: unknown) {
       if (isAxiosError(err) && err.response?.data?.error?.message) {
         setSubmitError(err.response.data.error.message);
       } else {
-        const message = err instanceof Error ? err.message : 'Login failed. Please try again.';
+        const message =
+          err instanceof Error ? err.message : 'Registration failed. Please try again.';
         setSubmitError(message);
       }
     }
+  };
+
+  const handleGoogleLogin = () => {
+    window.location.href = `${API_URL}/auth/google`;
   };
 
   return (
@@ -49,7 +58,11 @@ export default function LoginPage() {
         <div className="hidden md:flex flex-col justify-between p-12 brand-gradient text-white relative overflow-hidden">
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-12">
-              <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
+              <svg
+                className="w-8 h-8"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
                 <path d="M6.36 18.78L6.61 18l.6-2.08h5.58l.6 2.08.25.78h2.65L11.92 5.22h-2.84L4.71 18.78H6.36zM9.5 7.74L12.12 14H7.87L9.5 7.74zM20 3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H4V5h16v14z" />
               </svg>
               <span className="font-headline font-extrabold text-2xl tracking-tighter">
@@ -58,25 +71,19 @@ export default function LoginPage() {
             </div>
 
             <h1 className="font-headline text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight mb-6">
-              Master the <br />
-              logic of code.
+              Start your <br />
+              journey today.
             </h1>
             <p className="text-primary-fixed-dim text-lg max-w-xs font-medium leading-relaxed">
-              Join the editorial learning platform designed for high-performance software
-              engineering.
+              Join the editorial learning platform designed for high-performance
+              software engineering.
             </p>
           </div>
 
           {/* Illustration Placeholder */}
           <div className="relative z-10 mt-auto">
             <div className="aspect-square w-full max-w-sm mx-auto bg-white/10 rounded-xl backdrop-blur-sm border border-white/10 p-6 flex items-center justify-center">
-              <svg
-                className="w-32 h-32 text-white/30"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1"
-              >
+              <svg className="w-32 h-32 text-white/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
               </svg>
             </div>
@@ -91,10 +98,10 @@ export default function LoginPage() {
           <div className="max-w-md w-full mx-auto">
             <div className="mb-10">
               <h2 className="font-headline text-3xl font-bold text-on-surface mb-2">
-                Welcome Back
+                Create Account
               </h2>
               <p className="text-on-surface-variant font-medium">
-                Please enter your details to continue your journey.
+                Fill in your details to get started.
               </p>
             </div>
 
@@ -105,6 +112,44 @@ export default function LoginPage() {
                   {submitError}
                 </div>
               )}
+
+              {/* Name Field */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="name"
+                  className="font-label text-xs font-bold uppercase tracking-widest text-on-surface-variant"
+                >
+                  Name
+                </label>
+                <div className="relative group">
+                  <input
+                    id="name"
+                    type="text"
+                    placeholder="John Doe"
+                    autoComplete="name"
+                    {...register('name')}
+                    className={cn(
+                      'w-full px-4 py-3 bg-surface-container-low border-none rounded-lg',
+                      'focus:ring-0 focus:bg-surface-container-lowest transition-all duration-200',
+                      'text-on-surface border-b-2 border-transparent focus:border-primary',
+                      'placeholder:text-outline-variant',
+                      errors.name && 'border-error focus:border-error',
+                    )}
+                  />
+                </div>
+                {errors.name && (
+                  <p className="text-error text-[11px] font-semibold flex items-center gap-1 mt-1">
+                    <svg
+                      className="w-3.5 h-3.5 shrink-0"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+                    </svg>
+                    {errors.name.message}
+                  </p>
+                )}
+              </div>
 
               {/* Email Field */}
               <div className="space-y-1.5">
@@ -132,7 +177,11 @@ export default function LoginPage() {
                 </div>
                 {errors.email && (
                   <p className="text-error text-[11px] font-semibold flex items-center gap-1 mt-1">
-                    <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                    <svg
+                      className="w-3.5 h-3.5 shrink-0"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
                       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
                     </svg>
                     {errors.email.message}
@@ -142,26 +191,18 @@ export default function LoginPage() {
 
               {/* Password Field */}
               <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <label
-                    htmlFor="password"
-                    className="font-label text-xs font-bold uppercase tracking-widest text-on-surface-variant"
-                  >
-                    Password
-                  </label>
-                  <Link
-                    href="#"
-                    className="text-xs font-bold text-primary hover:text-primary-container transition-colors"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
+                <label
+                  htmlFor="password"
+                  className="font-label text-xs font-bold uppercase tracking-widest text-on-surface-variant"
+                >
+                  Password
+                </label>
                 <div className="relative group">
                   <input
                     id="password"
                     type="password"
                     placeholder="••••••••"
-                    autoComplete="current-password"
+                    autoComplete="new-password"
                     {...register('password')}
                     className={cn(
                       'w-full px-4 py-3 bg-surface-container-low border-none rounded-lg',
@@ -174,7 +215,11 @@ export default function LoginPage() {
                 </div>
                 {errors.password && (
                   <p className="text-error text-[11px] font-semibold flex items-center gap-1 mt-1">
-                    <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                    <svg
+                      className="w-3.5 h-3.5 shrink-0"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
                       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
                     </svg>
                     {errors.password.message}
@@ -182,7 +227,45 @@ export default function LoginPage() {
                 )}
               </div>
 
-              {/* Login Button */}
+              {/* Confirm Password Field */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="confirmPassword"
+                  className="font-label text-xs font-bold uppercase tracking-widest text-on-surface-variant"
+                >
+                  Confirm Password
+                </label>
+                <div className="relative group">
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="••••••••"
+                    autoComplete="new-password"
+                    {...register('confirmPassword')}
+                    className={cn(
+                      'w-full px-4 py-3 bg-surface-container-low border-none rounded-lg',
+                      'focus:ring-0 focus:bg-surface-container-lowest transition-all duration-200',
+                      'text-on-surface border-b-2 border-transparent focus:border-primary',
+                      'placeholder:text-outline-variant',
+                      errors.confirmPassword && 'border-error focus:border-error',
+                    )}
+                  />
+                </div>
+                {errors.confirmPassword && (
+                  <p className="text-error text-[11px] font-semibold flex items-center gap-1 mt-1">
+                    <svg
+                      className="w-3.5 h-3.5 shrink-0"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+                    </svg>
+                    {errors.confirmPassword.message}
+                  </p>
+                )}
+              </div>
+
+              {/* Register Button */}
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -197,10 +280,10 @@ export default function LoginPage() {
                 {isSubmitting ? (
                   <>
                     <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Signing In...</span>
+                    <span>Creating Account...</span>
                   </>
                 ) : (
-                  <span>Sign In</span>
+                  <span>Create Account</span>
                 )}
               </button>
 
@@ -210,16 +293,16 @@ export default function LoginPage() {
                   <div className="w-full border-t border-surface-container-high" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase font-bold tracking-widest text-outline-variant">
-                  <span className="bg-surface-container-lowest px-4">Or continue with</span>
+                  <span className="bg-surface-container-lowest px-4">
+                    Or continue with
+                  </span>
                 </div>
               </div>
 
               {/* Google Login */}
               <button
                 type="button"
-                onClick={() => {
-                  window.location.href = `${API_URL}/auth/google`;
-                }}
+                onClick={handleGoogleLogin}
                 className={cn(
                   'w-full flex items-center justify-center gap-3 px-4 py-3',
                   'bg-surface-container-lowest border border-outline-variant/30 rounded-xl',
@@ -228,22 +311,10 @@ export default function LoginPage() {
                 )}
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    fill="#4285F4"
-                  />
-                  <path
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    fill="#34A853"
-                  />
-                  <path
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
-                    fill="#FBBC05"
-                  />
-                  <path
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                    fill="#EA4335"
-                  />
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                 </svg>
                 <span>Continue with Google</span>
               </button>
@@ -251,12 +322,12 @@ export default function LoginPage() {
 
             <div className="mt-10 text-center">
               <p className="text-on-surface-variant font-medium">
-                Don&apos;t have an account?{' '}
+                Already have an account?{' '}
                 <Link
-                  href="/register"
+                  href="/login"
                   className="text-primary font-bold hover:underline underline-offset-4 decoration-2"
                 >
-                  Create an account
+                  Sign in
                 </Link>
               </p>
             </div>

@@ -4,6 +4,7 @@ import cors from 'cors';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
+import passport from './config/passport.js';
 import { env } from './config/env.js';
 import { logger } from './utils/logger.js';
 import { apiLimiter } from './middleware/rateLimit.js';
@@ -63,6 +64,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Cookie parsing
 app.use(cookieParser());
+
+// Passport initialization (stateless — no sessions)
+app.use(passport.initialize());
 
 // HTTP request logging
 const morganFormat = env.NODE_ENV === 'development' ? 'dev' : 'combined';

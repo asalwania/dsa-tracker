@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { z } from 'zod';
 
 /**
@@ -29,26 +30,26 @@ const envSchema = z.object({
   /** Refresh token expiration (e.g. "30d", "7d") */
   JWT_REFRESH_EXPIRES_IN: z.string().min(1).default('30d'),
 
-  /** Google OAuth client ID */
-  GOOGLE_CLIENT_ID: z.string().min(1, 'GOOGLE_CLIENT_ID is required'),
+  /** Google OAuth client ID (optional in development) */
+  GOOGLE_CLIENT_ID: z.string().default(''),
 
-  /** Google OAuth client secret */
-  GOOGLE_CLIENT_SECRET: z.string().min(1, 'GOOGLE_CLIENT_SECRET is required'),
+  /** Google OAuth client secret (optional in development) */
+  GOOGLE_CLIENT_SECRET: z.string().default(''),
 
-  /** Google OAuth callback URL */
-  GOOGLE_CALLBACK_URL: z.string().url('GOOGLE_CALLBACK_URL must be a valid URL'),
+  /** Google OAuth callback URL (optional in development) */
+  GOOGLE_CALLBACK_URL: z.string().default('http://localhost:5000/api/auth/google/callback'),
 
-  /** GitHub OAuth client ID */
-  GITHUB_CLIENT_ID: z.string().min(1, 'GITHUB_CLIENT_ID is required'),
+  /** GitHub OAuth client ID (optional in development) */
+  GITHUB_CLIENT_ID: z.string().default(''),
 
-  /** GitHub OAuth client secret */
-  GITHUB_CLIENT_SECRET: z.string().min(1, 'GITHUB_CLIENT_SECRET is required'),
+  /** GitHub OAuth client secret (optional in development) */
+  GITHUB_CLIENT_SECRET: z.string().default(''),
 
-  /** GitHub OAuth callback URL */
-  GITHUB_CALLBACK_URL: z.string().url('GITHUB_CALLBACK_URL must be a valid URL'),
+  /** GitHub OAuth callback URL (optional in development) */
+  GITHUB_CALLBACK_URL: z.string().default('http://localhost:5000/api/auth/github/callback'),
 
   /** Frontend URL for CORS origin */
-  CLIENT_URL: z.string().url('CLIENT_URL must be a valid URL'),
+  CLIENT_URL: z.string().url('CLIENT_URL must be a valid URL').default('http://localhost:3000'),
 
   /** Cookie domain for auth cookies */
   COOKIE_DOMAIN: z.string().min(1).default('localhost'),

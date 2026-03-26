@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { authService } from './auth.service.js';
+import { User } from '../users/users.model.js';
 import { sendResponse } from '../../utils/response.js';
 import { setRefreshTokenCookie, clearRefreshTokenCookie } from '../../utils/cookie.js';
 import { AppError } from '../../utils/AppError.js';
@@ -145,6 +146,34 @@ export const authController = {
       const redirectUrl = new URL('/auth/callback', process.env['CLIENT_URL'] ?? 'http://localhost:3000');
       redirectUrl.searchParams.set('token', result.accessToken);
       res.redirect(redirectUrl.toString());
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * GET /api/auth/me
+   * Returns the current authenticated user's profile.
+   */
+  async me(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const user = await User.findById(req.user!.userId);
+      if (!user) {
+        throw AppError.notFound('User not found');
+      }
+
+      sendResponse(
+        res,
+        200,
+        {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          avatar: user.avatar,
+        },
+        'User profile retrieved',
+      );
     } catch (error) {
       next(error);
     }

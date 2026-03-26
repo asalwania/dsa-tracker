@@ -67,7 +67,16 @@
   background: linear-gradient(135deg, #4648d4 0%, #6063ee 100%);
 }
 
+button {
+  cursor: pointer;
+}
+
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
