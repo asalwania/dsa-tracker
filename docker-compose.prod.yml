@@ -101,11 +101,10 @@ services:
     container_name: dsa-tracker-web
     depends_on:
       - api
-    env_file:
-      - apps/web/.env
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://3.107.253.51:5000/api}
     networks:
       - dsa-network
     restart: always
