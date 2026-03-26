@@ -4,7 +4,7 @@ import { z } from 'zod';
 export const toggleProgressSchema = z.object({
   problemId: z.string().min(1, 'Problem ID is required'),
   status: z.enum(['solved', 'attempted', 'skipped', 'pending']).optional().default('solved'),
-  notes: z.string().max(2000).optional().default(''),
+  notes: z.string().max(2000).optional(),
 });
 
 /** Schema for querying user progress by topic */

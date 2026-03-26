@@ -40,6 +40,12 @@ export default function RootLayout({
         <title>{siteTitle}</title>
         <meta name="description" content={siteDescription} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/favicon.ico" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var saved=localStorage.getItem('theme');var theme=(saved==='light'||saved==='dark')?saved:(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.theme=theme;}catch(_e){document.documentElement.dataset.theme='light';}})();`,
+          }}
+        />
       </head>
       <body className="min-h-screen bg-surface text-on-surface antialiased">
         <QueryClientProvider client={queryClient}>

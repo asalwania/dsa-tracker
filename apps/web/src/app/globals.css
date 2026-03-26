@@ -62,6 +62,124 @@
   --font-label: var(--font-inter), sans-serif;
 }
 
+:root[data-theme='dark'] {
+  --color-primary: #8fa3ff;
+  --color-primary-container: #33489e;
+  --color-primary-fixed: #dbe1ff;
+  --color-primary-fixed-dim: #b9c5ff;
+  --color-on-primary: #0f1733;
+  --color-on-primary-container: #e8ecff;
+  --color-on-primary-fixed: #0d1432;
+  --color-on-primary-fixed-variant: #24397d;
+  --color-inverse-primary: #4b5fd1;
+
+  --color-secondary: #9db0ff;
+  --color-secondary-container: #334071;
+  --color-secondary-fixed: #dde3ff;
+  --color-secondary-fixed-dim: #bfcbff;
+  --color-on-secondary: #111b40;
+  --color-on-secondary-container: #e6eaff;
+  --color-on-secondary-fixed: #10183f;
+  --color-on-secondary-fixed-variant: #2b3c79;
+
+  --color-tertiary: #ffb97f;
+  --color-tertiary-container: #653d17;
+  --color-tertiary-fixed: #ffe2cd;
+  --color-tertiary-fixed-dim: #ffc89d;
+  --color-on-tertiary: #3c220b;
+  --color-on-tertiary-container: #ffe9db;
+  --color-on-tertiary-fixed: #2f1807;
+  --color-on-tertiary-fixed-variant: #6f3e15;
+
+  --color-error: #ffb4ab;
+  --color-error-container: #93000a;
+  --color-on-error: #690005;
+  --color-on-error-container: #ffdad6;
+
+  --color-surface: #0f141a;
+  --color-surface-dim: #0a0e13;
+  --color-surface-bright: #161c23;
+  --color-surface-variant: #27303a;
+  --color-surface-tint: #9ab0ff;
+  --color-surface-container: #151b22;
+  --color-surface-container-low: #1a222b;
+  --color-surface-container-high: #222c36;
+  --color-surface-container-highest: #2a3541;
+  --color-surface-container-lowest: #11171d;
+
+  --color-on-surface: #e6edf3;
+  --color-on-surface-variant: #b7c2cf;
+  --color-inverse-surface: #e6edf3;
+  --color-inverse-on-surface: #161c23;
+
+  --color-outline: #8a97a6;
+  --color-outline-variant: #34414f;
+  --color-background: #0f141a;
+  --color-on-background: #e6edf3;
+}
+
+html,
+body {
+  transition:
+    background-color 220ms ease,
+    color 220ms ease,
+    border-color 220ms ease;
+}
+
+html[data-theme='dark'] .bg-white {
+  background-color: var(--color-surface-container-lowest);
+}
+
+html[data-theme='dark'] .bg-white\/85 {
+  background-color: color-mix(in srgb, var(--color-surface-container-low) 85%, transparent);
+}
+
+html[data-theme='dark'] .bg-white\/90 {
+  background-color: color-mix(in srgb, var(--color-surface-container-lowest) 90%, transparent);
+}
+
+html[data-theme='dark'] .bg-white\/10 {
+  background-color: color-mix(in srgb, var(--color-on-surface) 9%, transparent);
+}
+
+html[data-theme='dark'] .bg-white\/5 {
+  background-color: color-mix(in srgb, var(--color-on-surface) 6%, transparent);
+}
+
+html[data-theme='dark'] .bg-slate-50 {
+  background-color: var(--color-surface-container-low);
+}
+
+html[data-theme='dark'] .bg-slate-100 {
+  background-color: var(--color-surface-container-high);
+}
+
+html[data-theme='dark'] .text-slate-900 {
+  color: var(--color-on-surface);
+}
+
+html[data-theme='dark'] .text-slate-700,
+html[data-theme='dark'] .text-slate-600,
+html[data-theme='dark'] .text-slate-500 {
+  color: var(--color-on-surface-variant);
+}
+
+html[data-theme='dark'] .border-slate-200 {
+  border-color: var(--color-outline-variant);
+}
+
+html[data-theme='dark'] .hover\:bg-slate-100:hover {
+  background-color: var(--color-surface-container-high);
+}
+
+html[data-theme='dark'] .text-indigo-700 {
+  color: var(--color-primary);
+}
+
+html[data-theme='dark'] .hover\:bg-indigo-50:hover {
+  background-color: color-mix(in srgb, var(--color-primary) 16%, var(--color-surface-container-lowest));
+}
+
 /* Custom utility classes */
 .brand-gradient {
   background: linear-gradient(135deg, #4648d4 0%, #6063ee 100%);
